@@ -38,6 +38,7 @@ func run() error {
 	log.Println("Connected to reservations database")
 
 	mux := http.NewServeMux()
+	mux.HandleFunc("GET /api/v1/hotels", hotelsHandler(pool))
 	mux.HandleFunc("GET /manage/health", func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 		defer cancel()
