@@ -33,14 +33,12 @@ func run() error {
 	defer pool.Close()
 
 	if err := pool.Ping(ctx); err != nil {
-		return fmt.Errorf("connect to payments database: %w", err)
+		return fmt.Errorf("connect to loyalties database: %w", err)
 	}
-	log.Println("Connected to payments database")
+	log.Println("Connected to loyalties database")
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /api/v1/payments/{paymentUid}", getPaymentHandler(postgresPaymentStore{pool: pool}))
-	mux.HandleFunc("DELETE /api/v1/payments/{paymentUid}", cancelPaymentHandler(postgresPaymentStore{pool: pool}))
-	mux.HandleFunc("POST /api/v1/payments", createPaymentHandler(postgresPaymentStore{pool: pool}))
+	mux.HandleFunc("GET /api/v1/loyalty", getLoyaltyHandler(postgresLoyaltyStore{pool: pool}))
 	mux.HandleFunc("GET /manage/health", func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 		defer cancel()
@@ -52,11 +50,11 @@ func run() error {
 	})
 
 	server := &http.Server{
-		Addr:              ":8060",
+		Addr:              ":8050",
 		Handler:           mux,
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
-	log.Println("Payment Service listening on :8060")
+	log.Println("Loyalty Service listening on :8050")
 	return server.ListenAndServe()
 }
