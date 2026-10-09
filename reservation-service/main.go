@@ -43,6 +43,7 @@ func run() error {
 	mux.HandleFunc("DELETE /api/v1/reservations/{reservationUid}", cancelReservationHandler(postgresReservationStore{pool: pool}))
 	mux.HandleFunc("GET /api/v1/reservations", listReservationsHandler(postgresReservationStore{pool: pool}))
 	mux.HandleFunc("GET /api/v1/hotels", hotelsHandler(pool))
+	mux.HandleFunc("GET /api/v1/hotels/{hotelUid}", getHotelHandler(postgresReservationStore{pool: pool}))
 	mux.HandleFunc("GET /manage/health", func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 		defer cancel()

@@ -19,7 +19,7 @@ func main() {
 }
 
 func run() error {
-	handler, err := newGatewayHandler(os.Getenv("RESERVATION_SERVICE_URL"))
+	handler, err := newGatewayHandler(os.Getenv("RESERVATION_SERVICE_URL"), os.Getenv("LOYALTY_SERVICE_URL"))
 	if err != nil {
 		return err
 	}
@@ -33,35 +33,49 @@ func run() error {
 	return server.ListenAndServe()
 }
 
-func newGatewayHandler(reservationURL string) (http.Handler, error) {
-	target, err := url.Parse(reservationURL)
-	if err != nil || target.Host == "" || (target.Scheme != "http" && target.Scheme != "https") {
-		return nil, fmt.Errorf("RESERVATION_SERVICE_URL must be a valid HTTP or HTTPS URL")
+func newGatewayHandler(reservationURL, loyaltyURL string) (http.Handler, error) {
+	reservationProxy, err := newServiceProxy(reservationURL, "RESERVATION_SERVICE_URL", "Reservation Service")
+	if err != nil {
+		return nil, err
 	}
+	loyaltyProxy, err := newServiceProxy(loyaltyURL, "LOYALTY_SERVICE_URL", "Loyalty Service")
+	if err != nil {
+		return nil, err
+	}
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /manage/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	mux.HandleFunc("GET /api/v1/hotels", proxyWithTimeout(reservationProxy))
+	mux.HandleFunc("GET /api/v1/loyalty", proxyWithTimeout(loyaltyProxy))
+	return mux, nil
+}
 
-	proxy := &httputil.ReverseProxy{
+func newServiceProxy(serviceURL, variable, serviceName string) (*httputil.ReverseProxy, error) {
+	target, err := url.Parse(serviceURL)
+	if err != nil || target.Host == "" || (target.Scheme != "http" && target.Scheme != "https") {
+		return nil, fmt.Errorf("%s must be a valid HTTP or HTTPS URL", variable)
+	}
+	return &httputil.ReverseProxy{
 		Rewrite: func(request *httputil.ProxyRequest) {
 			request.SetURL(target)
 			request.SetXForwarded()
 		},
 		ErrorHandler: func(w http.ResponseWriter, r *http.Request, err error) {
-			log.Printf("reservation service request failed: %v", err)
+			log.Printf("%s request failed: %v", serviceName, err)
 			w.Header().Set("Content-Type", "application/json; charset=utf-8")
 			w.WriteHeader(http.StatusServiceUnavailable)
-			if err := json.NewEncoder(w).Encode(map[string]string{"message": "Reservation Service unavailable"}); err != nil {
+			if err := json.NewEncoder(w).Encode(map[string]string{"message": serviceName + " unavailable"}); err != nil {
 				log.Printf("write error response: %v", err)
 			}
 		},
-	}
+	}, nil
+}
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /manage/health", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	})
-	mux.HandleFunc("GET /api/v1/hotels", func(w http.ResponseWriter, r *http.Request) {
+func proxyWithTimeout(proxy *httputil.ReverseProxy) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 		defer cancel()
 		proxy.ServeHTTP(w, r.WithContext(ctx))
-	})
-	return mux, nil
+	}
 }
