@@ -38,6 +38,7 @@ func run() error {
 	log.Println("Connected to payments database")
 
 	mux := http.NewServeMux()
+	mux.HandleFunc("DELETE /api/v1/payments/{paymentUid}", cancelPaymentHandler(postgresPaymentStore{pool: pool}))
 	mux.HandleFunc("POST /api/v1/payments", createPaymentHandler(postgresPaymentStore{pool: pool}))
 	mux.HandleFunc("GET /manage/health", func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
