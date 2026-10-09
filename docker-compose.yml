@@ -45,5 +45,18 @@ services:
       reservation-service:
         condition: service_started
 
+  payment-service:
+    image: lab2-payment-service:local
+    build:
+      context: ./payment-service
+    restart: on-failure
+    environment:
+      DATABASE_URL: "postgres://program:test@postgres:5432/payments?sslmode=disable"
+    ports:
+      - "8060:8060"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   db-data:
