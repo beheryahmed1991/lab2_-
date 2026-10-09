@@ -40,6 +40,7 @@ func run() error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /api/v1/reservations", createReservationHandler(postgresReservationStore{pool: pool}))
 	mux.HandleFunc("GET /api/v1/reservations/{reservationUid}", getReservationHandler(postgresReservationStore{pool: pool}))
+	mux.HandleFunc("DELETE /api/v1/reservations/{reservationUid}", cancelReservationHandler(postgresReservationStore{pool: pool}))
 	mux.HandleFunc("GET /api/v1/reservations", listReservationsHandler(postgresReservationStore{pool: pool}))
 	mux.HandleFunc("GET /api/v1/hotels", hotelsHandler(pool))
 	mux.HandleFunc("GET /manage/health", func(w http.ResponseWriter, r *http.Request) {
