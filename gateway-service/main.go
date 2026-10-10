@@ -48,6 +48,8 @@ func newGatewayHandler(reservationURL, loyaltyURL, paymentURL string) (http.Hand
 	client := bookingClient{reservationURL: reservationURL, loyaltyURL: loyaltyURL, paymentURL: paymentURL, http: &http.Client{Timeout: 6 * time.Second}}
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /api/v1/reservations", client.createBooking)
+	mux.HandleFunc("GET /api/v1/reservations", client.listBookingInfo)
+	mux.HandleFunc("GET /api/v1/reservations/{reservationUid}", client.getBookingInfo)
 	mux.HandleFunc("DELETE /api/v1/reservations/{reservationUid}", client.cancelBookingHandler())
 	mux.HandleFunc("GET /manage/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
