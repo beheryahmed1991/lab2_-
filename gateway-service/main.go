@@ -49,6 +49,7 @@ func newGatewayHandler(reservationURL, loyaltyURL, paymentURL string) (http.Hand
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /api/v1/reservations", client.createBooking)
 	mux.HandleFunc("GET /api/v1/reservations", client.listBookingInfo)
+	mux.HandleFunc("GET /api/v1/me", client.getUserInfo)
 	mux.HandleFunc("GET /api/v1/reservations/{reservationUid}", client.getBookingInfo)
 	mux.HandleFunc("DELETE /api/v1/reservations/{reservationUid}", client.cancelBookingHandler())
 	mux.HandleFunc("GET /manage/health", func(w http.ResponseWriter, r *http.Request) {
