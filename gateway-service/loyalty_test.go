@@ -26,7 +26,7 @@ func TestGatewayForwardsLoyaltyToCorrectService(t *testing.T) {
 				io.WriteString(w, body)
 			}))
 			defer loyaltyBackend.Close()
-			handler, err := newGatewayHandler(reservationBackend.URL, loyaltyBackend.URL)
+			handler, err := newGatewayHandler(reservationBackend.URL, loyaltyBackend.URL, "http://127.0.0.1:1")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -44,7 +44,7 @@ func TestGatewayForwardsLoyaltyToCorrectService(t *testing.T) {
 func TestGatewayLoyaltyUnavailable(t *testing.T) {
 	backend := httptest.NewServer(http.NotFoundHandler())
 	backend.Close()
-	handler, err := newGatewayHandler("http://127.0.0.1:1", backend.URL)
+	handler, err := newGatewayHandler("http://127.0.0.1:1", backend.URL, "http://127.0.0.1:1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -57,14 +57,14 @@ func TestGatewayLoyaltyUnavailable(t *testing.T) {
 
 func TestGatewayRejectsInvalidLoyaltyURL(t *testing.T) {
 	for _, value := range []string{"", "loyalty-service:8050", "ftp://loyalty-service:8050", "://invalid"} {
-		if _, err := newGatewayHandler("http://127.0.0.1:1", value); err == nil {
+		if _, err := newGatewayHandler("http://127.0.0.1:1", value, "http://127.0.0.1:1"); err == nil {
 			t.Errorf("accepted invalid loyalty URL %q", value)
 		}
 	}
 }
 
 func TestGatewayLoyaltyDoesNotExposeUpdates(t *testing.T) {
-	handler, err := newGatewayHandler("http://127.0.0.1:1", "http://127.0.0.1:1")
+	handler, err := newGatewayHandler("http://127.0.0.1:1", "http://127.0.0.1:1", "http://127.0.0.1:1")
 	if err != nil {
 		t.Fatal(err)
 	}

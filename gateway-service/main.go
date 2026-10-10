@@ -19,7 +19,7 @@ func main() {
 }
 
 func run() error {
-	handler, err := newGatewayHandler(os.Getenv("RESERVATION_SERVICE_URL"), os.Getenv("LOYALTY_SERVICE_URL"))
+	handler, err := newGatewayHandler(os.Getenv("RESERVATION_SERVICE_URL"), os.Getenv("LOYALTY_SERVICE_URL"), os.Getenv("PAYMENT_SERVICE_URL"))
 	if err != nil {
 		return err
 	}
@@ -27,13 +27,13 @@ func run() error {
 		Addr:              ":8080",
 		Handler:           handler,
 		ReadHeaderTimeout: 5 * time.Second,
-		WriteTimeout:      15 * time.Second,
+		WriteTimeout:      60 * time.Second,
 	}
 	log.Println("Gateway Service listening on :8080")
 	return server.ListenAndServe()
 }
 
-func newGatewayHandler(reservationURL, loyaltyURL string) (http.Handler, error) {
+func newGatewayHandler(reservationURL, loyaltyURL, paymentURL string) (http.Handler, error) {
 	reservationProxy, err := newServiceProxy(reservationURL, "RESERVATION_SERVICE_URL", "Reservation Service")
 	if err != nil {
 		return nil, err
@@ -42,7 +42,13 @@ func newGatewayHandler(reservationURL, loyaltyURL string) (http.Handler, error) 
 	if err != nil {
 		return nil, err
 	}
+	if _, err := newServiceProxy(paymentURL, "PAYMENT_SERVICE_URL", "Payment Service"); err != nil {
+		return nil, err
+	}
+	client := bookingClient{reservationURL: reservationURL, loyaltyURL: loyaltyURL, paymentURL: paymentURL, http: &http.Client{Timeout: 6 * time.Second}}
 	mux := http.NewServeMux()
+	mux.HandleFunc("POST /api/v1/reservations", client.createBooking)
+	mux.HandleFunc("DELETE /api/v1/reservations/{reservationUid}", client.cancelBookingHandler())
 	mux.HandleFunc("GET /manage/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})

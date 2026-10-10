@@ -21,7 +21,7 @@ func TestGatewayForwardsHotelRequestAndResponse(t *testing.T) {
 				io.WriteString(w, body)
 			}))
 			defer backend.Close()
-			handler, err := newGatewayHandler(backend.URL, "http://127.0.0.1:1")
+			handler, err := newGatewayHandler(backend.URL, "http://127.0.0.1:1", "http://127.0.0.1:1")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -35,7 +35,7 @@ func TestGatewayForwardsHotelRequestAndResponse(t *testing.T) {
 }
 
 func TestGatewayHealthAndRouteRestrictions(t *testing.T) {
-	handler, err := newGatewayHandler("http://127.0.0.1:1", "http://127.0.0.1:1")
+	handler, err := newGatewayHandler("http://127.0.0.1:1", "http://127.0.0.1:1", "http://127.0.0.1:1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -59,7 +59,7 @@ func TestGatewayHealthAndRouteRestrictions(t *testing.T) {
 func TestGatewayUnavailableBackend(t *testing.T) {
 	backend := httptest.NewServer(http.NotFoundHandler())
 	backend.Close()
-	handler, err := newGatewayHandler(backend.URL, "http://127.0.0.1:1")
+	handler, err := newGatewayHandler(backend.URL, "http://127.0.0.1:1", "http://127.0.0.1:1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -72,7 +72,7 @@ func TestGatewayUnavailableBackend(t *testing.T) {
 
 func TestGatewayRejectsMissingOrInvalidServiceURL(t *testing.T) {
 	for _, value := range []string{"", "reservation-service:8070", "ftp://reservation-service:8070", "://invalid"} {
-		if _, err := newGatewayHandler(value, "http://127.0.0.1:1"); err == nil {
+		if _, err := newGatewayHandler(value, "http://127.0.0.1:1", "http://127.0.0.1:1"); err == nil {
 			t.Errorf("expected invalid URL %q to be rejected", value)
 		}
 	}

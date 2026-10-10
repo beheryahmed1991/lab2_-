@@ -40,12 +40,15 @@ services:
     environment:
       RESERVATION_SERVICE_URL: "http://reservation-service:8070"
       LOYALTY_SERVICE_URL: "http://loyalty-service:8050"
+      PAYMENT_SERVICE_URL: "http://payment-service:8060"
     ports:
       - "8080:8080"
     depends_on:
       reservation-service:
         condition: service_started
       loyalty-service:
+        condition: service_started
+      payment-service:
         condition: service_started
 
   payment-service:
